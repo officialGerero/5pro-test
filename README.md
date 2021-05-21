@@ -4,6 +4,5 @@
 -run: composer install<br>
 -setup database in .env.example and rename to .env !!!<br>
 -migrate the database: php artisan migrate<br>
--run seeder: php artisan db:seed<br>
 -to start local server run: php artisan serve<br>
 
