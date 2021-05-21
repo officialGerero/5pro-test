@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CoordinatesRequest;
 use App\Models\Address;
 use App\Models\Region;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
 
 class CoordinatesController extends Controller
 {
-    public function getCoords(CoordinatesRequest $request){
+    public function getCoords(CoordinatesRequest $request) : Response{
         if(isset($request->validator) && $request->validator->fails()){
             return response($request->validator->messages());
         }
@@ -25,7 +26,7 @@ class CoordinatesController extends Controller
         return response()->json($arrayResponse);
     }
 
-    public function saveCoordinates(string $coordinates, string $address,$id = 0){
+    public function saveCoordinates(string $coordinates, string $address,$id = 0) : bool{
         if(Address::where('coordinates',$coordinates)->first()){
              return false;
         }else{
@@ -37,7 +38,7 @@ class CoordinatesController extends Controller
         }
     }
 
-    public function saveRegion(string $region, $city){
+    public function saveRegion(string $region, $city): int{
         if($reg = Region::where('region',$region)->first()){
             return $reg->id;
         }else{
@@ -53,7 +54,7 @@ class CoordinatesController extends Controller
         }
     }
 
-    public function getAddress($id = null){
+    public function getAddress($id = null) : Response{
         if(isset($id)&&!empty($id)){
             $address = Address::where('region_id',$id)->get();
             return response($address);
