@@ -20,3 +20,5 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 });
 
 Route::post('/send-coords',[CoordinatesController::class,'getCoords']);
+
+Route::get('/get-address/{id?}',[CoordinatesController::class,'getAddress']);

@@ -12,6 +12,11 @@ class Address extends Model
     protected $fillable = [
         'coordinates',
         'address',
+        'region_id'
     ];
     public $timestamps = false;
+
+    public function region(){
+        return $this->hasOne(Region::class,'id','region_id');
+    }
 }
