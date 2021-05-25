@@ -13,10 +13,20 @@ class Region extends Model
 
     protected $fillable = [
         'region',
-        'city',
     ];
 
     public function address(){
         return $this->belongsTo(Address::class,'region_id','id');
+    }
+
+    public function scopeRegionExists($query,string $region){
+        return $query->where('region',$region)->first();
+    }
+
+    public function addRegion(string $region){
+        $new = new Region();
+        $new->region = $region;
+        $new->save();
+        return $new->id;
     }
 }

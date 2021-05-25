@@ -4,62 +4,73 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CoordinatesRequest;
 use App\Models\Address;
+use App\Models\City;
 use App\Models\Region;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
 
 class CoordinatesController extends Controller
 {
-    public function getCoords(CoordinatesRequest $request) : Response{
+    private $address,$region,$city;
+
+    public function __construct(Address $address, Region $region, City $city)
+    {
+        $this->address = $address;
+        $this->region = $region;
+        $this->city = $city;
+    }
+
+    public function getCoords(CoordinatesRequest $request){
         if(isset($request->validator) && $request->validator->fails()){
             return response($request->validator->messages());
         }
-        $coordinates = $request->latitude . ','.$request->longitude;
         $response = Http::get('http://api.positionstack.com/v1/reverse',[
             'access_key'=>'a4f186c7337e493177aa468244dc33b9',
-            'query'=>$coordinates,
+            'query'=>$request->latitude . ','.$request->longitude,
         ]);
         $arrayResponse = json_decode($response)->data[0];
-        $id = $this->saveRegion($arrayResponse->region,$arrayResponse->locality);
-        if(isset($id)) $this->saveCoordinates($coordinates,$arrayResponse->label, $id);
+        $id = $this->saveRegion($arrayResponse->region);
+        $this->saveCity($arrayResponse->locality);
+        if(isset($id)) $this->saveAddress($request->latitude,$request->longitude,$arrayResponse->label, $id);
         return response()->json($arrayResponse);
     }
 
-    public function saveCoordinates(string $coordinates, string $address,$id = 0) : bool{
-        if(Address::where('coordinates',$coordinates)->first()){
-             return false;
+    private function saveAddress(string $latitude,string $longitude, string $address,$id = 0){
+        if(isset($this->address->WhereCoordsExist($latitude,$longitude)->id)){
+            return false;
         }else{
-            $new = new Address();
-            $new->coordinates = $coordinates;
-            $new->address = $address;
-            $new->region_id = $id;
-            $new->save();
+            $this->address->saveAddress($latitude,$longitude,$address,$id);
         }
     }
 
-    public function saveRegion(string $region, $city): int{
-        if($reg = Region::where('region',$region)->first()){
+    private function saveRegion(string $region){
+        $reg = $this->region->RegionExists($region);
+        if(isset($reg) && !empty($reg->id)){
             return $reg->id;
         }else{
-            $new = new Region();
-            $new->region = $region;
-            if($city === null){
-                $new->city = 'null';
-            }else{
-                $new->city = $city;
-            }
-            $new->save();
-            return $new->id;
+            return $this->region->addRegion($region);
         }
     }
 
-    public function getAddress($id = null) : Response{
+    private function saveCity($city){
+        $test = $this->city->CityExists($city);
+        if (isset($test->name)){
+            return false;
+        }else {
+            if ($city === null) {
+                $city = 'null';
+            }
+            $this->city->addCity($city);
+        }
+    }
+
+    public function getAddress($id = null){
         if(isset($id)&&!empty($id)){
-            $address = Address::where('region_id',$id)->get();
-            return response($address);
+            return response($this->address->GetAddressByRegion($id));
         }else{
-            return response(Address::all());
+            return response($this->address->getAllAddresses());
         }
     }
 }
